@@ -112,5 +112,54 @@ def run_expectations(cleaned_rows: List[Dict[str, Any]]) -> Tuple[List[Expectati
         )
     )
 
+    # E7 (mới): đủ 5 nguồn canonical cho grading — tránh embed thiếu doc.
+    required_doc_ids = {
+        "policy_refund_v4",
+        "sla_p1_2026",
+        "it_helpdesk_faq",
+        "hr_leave_policy",
+        "access_control_sop",
+    }
+    present_doc_ids = {(r.get("doc_id") or "").strip() for r in cleaned_rows}
+    missing_docs = sorted(required_doc_ids - present_doc_ids)
+    ok7 = len(missing_docs) == 0
+    results.append(
+        ExpectationResult(
+            "all_grading_sources_present",
+            ok7,
+            "halt",
+            f"missing_doc_ids={missing_docs}",
+        )
+    )
+
+    # E8 (mới): HR phải có ít nhất 1 chunk 12 ngày phép (bản 2026) sau clean.
+    hr_2026 = [
+        r
+        for r in cleaned_rows
+        if r.get("doc_id") == "hr_leave_policy"
+        and "12 ngày phép năm" in (r.get("chunk_text") or "")
+    ]
+    ok8 = len(hr_2026) >= 1
+    results.append(
+        ExpectationResult(
+            "hr_leave_has_2026_annual_marker",
+            ok8,
+            "halt",
+            f"rows_with_12d={len(hr_2026)}",
+        )
+    )
+
+    # E9 (mới): access_control_sop có mặt — warn nếu thiếu (phát hiện sớm allowlist sai).
+    acl_rows = [r for r in cleaned_rows if r.get("doc_id") == "access_control_sop"]
+    ok9 = len(acl_rows) >= 1
+    results.append(
+        ExpectationResult(
+            "access_control_sop_min_one_row",
+            ok9,
+            "warn",
+            f"access_control_rows={len(acl_rows)}",
+        )
+    )
+
     halt = any(not r.passed and r.severity == "halt" for r in results)
     return results, halt
