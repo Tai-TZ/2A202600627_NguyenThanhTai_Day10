@@ -8,4 +8,10 @@ chroma_db/
 .pytest_cache/
 *.log
 
+# Ignore generated artifacts by default; keep eval deliverables for grading evidence.
 artifacts/*
+!artifacts/eval/
+artifacts/eval/*
+!artifacts/eval/grading_run.jsonl
+!artifacts/eval/after_fix_eval.csv
+!artifacts/eval/after_inject_bad.csv
